@@ -1,0 +1,58 @@
+local RunService = game:GetService("RunService")
+
+local hooked = false
+RunService.Heartbeat:Connect(function()
+	if not hooked then
+		for i, v in pairs(getgc(true)) do
+			if typeof(v) == "table" and rawget(v, "springs") then
+				local springs = v.springs
+				if springs and springs.camera_recoil then
+					local function hookSpring(spring)
+						if spring and spring.shove then
+							local originalShove = spring.shove
+							spring.shove = function(self, force)
+								return nil
+							end
+						end
+					end
+
+					hookSpring(springs.camera_recoil)
+					hookSpring(springs.camera_lag_recoil)
+					hookSpring(springs.aim_sway_recoil)
+					hookSpring(springs.sway_recoil)
+					hookSpring(springs.rotation_recoil)
+					hookSpring(springs.roll_recoil)
+					hookSpring(springs.camera_translation_recoil)
+
+					hooked = true
+					break
+				end
+			end
+		end
+	end
+end)
+
+for i, v in pairs(getgc(true)) do
+	if typeof(v) == "table" and rawget(v, "play_track") then
+		local originalPlay = v.play_track
+		v.play_track = function(self, trackName)
+			local result = originalPlay(self, trackName)
+
+			if result and (trackName:find("fire") or trackName:find("bolt")) then
+				task.spawn(function()
+					task.wait(0.01)
+					if result.bone_weights then
+						result.bone_weights.receiver = {
+							{ 0, 0, 0 },
+							{ 0, 0, 0 },
+						}
+					end
+					result.weight = 0.0001
+				end)
+			end
+
+			return result
+		end
+		break
+	end
+end
