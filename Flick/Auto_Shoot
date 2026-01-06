@@ -1,0 +1,14 @@
+local SignalManager = require(game:GetService("ReplicatedStorage").SignalManager)
+local UserInputService = game:GetService("UserInputService")
+
+local RemoteName = "FireWeapon"
+
+UserInputService.InputBegan:Connect(function(i, p)
+	if p then
+		return
+	end
+	if i.KeyCode == Enum.KeyCode.E then
+		SignalManager.Fire(RemoteName, Enum.UserInputState.Begin)
+		SignalManager.Fire(RemoteName, Enum.UserInputState.End)
+	end
+end)
