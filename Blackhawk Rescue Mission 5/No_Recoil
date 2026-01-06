@@ -1,0 +1,8 @@
+for i, v in pairs(getgc(true)) do
+	if typeof(v) == "table" and rawget(v, "getRecoil") then
+		v.getRecoil = function(p58, p59, p60, p61, p62, p63)
+			return p58.Recoil_Camera or 0, 0, Vector2.new(0, 0)
+		end
+		break
+	end
+end
