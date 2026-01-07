@@ -1,0 +1,65 @@
+getgenv().SilentAim = {Enabled = true}
+
+local line = Drawing.new("Line")
+line.Visible = false
+line.Color = Color3.fromRGB(255, 255, 255)
+line.Thickness = 1
+
+local function getClosestZombie()
+    local camera = workspace.CurrentCamera
+    local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+    local zombies = workspace:FindFirstChild("Zombies")
+    
+    if not zombies then 
+        line.Visible = false 
+        return nil 
+    end
+    
+    local closest = nil
+    local closestDist = math.huge
+    
+    for _, zombie in pairs(zombies:GetChildren()) do
+        local head = zombie:FindFirstChild("Head")
+        if head then
+            local screenPos, onScreen = camera:WorldToViewportPoint(head.Position)
+            if onScreen then
+                local mousePos = Vector2.new(mouse.X, mouse.Y)
+                local screenPoint = Vector2.new(screenPos.X, screenPos.Y)
+                local dist = (mousePos - screenPoint).Magnitude
+                
+                if dist < closestDist then
+                    closestDist = dist
+                    closest = head
+                end
+            end
+        end
+    end
+    
+    if closest then
+        local screenPos = camera:WorldToViewportPoint(closest.Position)
+        local viewportSize = camera.ViewportSize
+        
+        line.From = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+        line.To = Vector2.new(screenPos.X, screenPos.Y)
+        line.Visible = true
+    else
+        line.Visible = false
+    end
+    
+    return closest
+end
+
+local RaycastManager = require(game:GetService("ReplicatedStorage").Modules.Match.Managers.RaycastManager)
+local originalRaycast = RaycastManager.Raycast
+
+RaycastManager.Raycast = function(self, p12)
+    if getgenv().SilentAim.Enabled then
+        local target = getClosestZombie()
+        if target and p12 and p12.CFrame then
+            local origin = p12.CFrame.Position
+            local newDir = (target.Position - origin).Unit
+            p12.CFrame = CFrame.new(origin, origin + newDir)
+        end
+    end
+    return originalRaycast(self, p12)
+end
