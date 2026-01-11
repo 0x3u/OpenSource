@@ -1,0 +1,67 @@
+run_on_actor(getactors()[1], [==[
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local GunModule = require(ReplicatedStorage.Modules.Items.Item.Gun)
+    
+    local original_get_shoot_look = GunModule.get_shoot_look
+    
+    local Players = game:GetService("Players")
+    local UserInputService = game:GetService("UserInputService")
+    local Workspace = game:GetService("Workspace")
+    
+    local function getClosestPlayerToCursor()
+        local closestPlayer, closestPart, closestDistSq = nil, nil, math.huge
+        local mousePos = UserInputService:GetMouseLocation()
+        local camera = Workspace.CurrentCamera
+        local localPlayer = Players.LocalPlayer
+        
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= localPlayer and 
+               player.Character and 
+               player.Character:FindFirstChild("Humanoid") and
+               player.Character.Humanoid.Health > 0 then
+                
+                local character = player.Character
+                -- Always aim for the head first
+                local targetPart = character:FindFirstChild("collision3") or character:FindFirstChild("collision3")
+                
+                if targetPart then
+                    local screenPos, onScreen = camera:WorldToViewportPoint(targetPart.Position)
+                    
+                    if onScreen then
+                        local dx = screenPos.X - mousePos.X
+                        local dy = screenPos.Y - mousePos.Y
+                        local distSq = dx * dx + dy * dy
+                        
+                        if distSq < closestDistSq then
+                            closestDistSq = distSq
+                            closestPlayer = player
+                            closestPart = targetPart
+                        end
+                    end
+                end
+            end
+        end
+        
+        return closestPlayer, closestPart
+    end
+    
+    GunModule.get_shoot_look = function(self)
+        local originalCFrame = original_get_shoot_look(self)
+        
+        local _, closestPart = getClosestPlayerToCursor()
+        
+        if closestPart then
+            local weaponPos = originalCFrame.Position
+            local targetPos = closestPart.Position
+            
+            -- Always aim directly at the target part (head if available)
+            -- No offset - aim directly at the part
+            local direction = (targetPos - weaponPos).Unit
+            return CFrame.lookAt(weaponPos, weaponPos + direction)
+        end
+        
+        return originalCFrame
+    end
+    
+    print("Silent aim hooked successfully - Aiming at head!")
+]==])
